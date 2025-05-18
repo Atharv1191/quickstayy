@@ -16,25 +16,41 @@ const stripeWebhooks = async (request, response) => {
         return response.status(400).send(`Webhook Error: ${error.message}`);
     }
 
-    // Handle the checkout session completed event
-    if (event.type === "checkout.session.completed") {
-        const session = event.data.object;
-        const bookingId = session.metadata.bookingId;
+    try {
+        if (event.type === "checkout.session.completed") {
+            const session = event.data.object;
+            const bookingId = session.metadata.bookingId;
 
-        try {
             await Booking.findByIdAndUpdate(bookingId, {
                 isPaid: true,
                 paymentMethod: "Stripe",
             });
-        } catch (error) {
-            console.error("Failed to update booking:", error);
-            return response.status(500).send("Failed to update booking");
         }
-    } else {
-        console.log(`Unhandled Event Type: ${event.type}`);
-    }
 
-    response.json({ received: true });
+        else if (event.type === "payment_intent.succeeded") {
+            const paymentIntent = event.data.object;
+            const bookingId = paymentIntent.metadata.bookingId;
+
+            if (bookingId) {
+                await Booking.findByIdAndUpdate(bookingId, {
+                    isPaid: true,
+                    paymentMethod: "Stripe",
+                });
+            } else {
+                console.warn("No bookingId in payment_intent metadata");
+            }
+        }
+
+        else {
+            console.log(`Unhandled Event Type: ${event.type}`);
+        }
+
+        response.json({ received: true });
+
+    } catch (error) {
+        console.error("Failed to handle webhook:", error);
+        return response.status(500).send("Internal Server Error");
+    }
 };
 
 module.exports = { stripeWebhooks };

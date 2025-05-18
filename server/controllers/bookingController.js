@@ -182,6 +182,7 @@ const getHotelBookings = async (req, res) => {
         });
     }
 };
+
 const stripePayment = async (req, res) => {
     try {
         const { bookingId } = req.body;
@@ -211,7 +212,12 @@ const stripePayment = async (req, res) => {
             success_url: `${origin}/loader/my-bookings`,
             cancel_url: `${origin}/my-bookings`,
             metadata: {
-                bookingId: bookingId.toString(), // ✅ fix here
+                bookingId: bookingId.toString(),
+            },
+            payment_intent_data: {
+                metadata: {
+                    bookingId: bookingId.toString(),
+                }
             }
         });
 
@@ -221,13 +227,15 @@ const stripePayment = async (req, res) => {
         });
 
     } catch (error) {
-        console.log(error);
+        console.error(error);
         res.json({
             success: false,
-            message: "payment failed"
+            message: "Payment failed"
         });
     }
 };
+
+module.exports = { stripePayment };
 
 // Export all controllers
 module.exports = {
