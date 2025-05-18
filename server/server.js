@@ -10,8 +10,11 @@ const hotelRoute = require("./routes/HotelRoutes");
 const roomRoute = require("./routes/roomRoutes")
 const bookingRoute = require("./routes/bookingRoutes")
 const connectCloudinary = require("./configs/cloudinary");
+const { stripeWebhooks } = require("./controllers/stripWebhookController");
 const app = express();
 app.use(cors());
+
+app.post('/api/stripe',express.raw({type:"application/json"}),stripeWebhooks)
 
 // 👇 Add this BEFORE express.json
 app.use(express.json({
